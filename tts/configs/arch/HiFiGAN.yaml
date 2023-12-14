@@ -1,0 +1,15 @@
+_target_: tts.model.HiFiGAN
+
+generator_params:
+  in_channels: 80
+  upsample_channel: 512
+  conv_kernels: [16, 16, 4, 4]
+  conv_strides: [8, 8, 2, 2]
+  res_kernels: [3, 7, 11]
+  res_dilations: [1, 3, 5]
+
+scale_discriminator_params:
+  base: 1
+
+period_discriminator_params:
+  base: 1

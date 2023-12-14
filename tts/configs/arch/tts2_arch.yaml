@@ -1,0 +1,37 @@
+_target_: tts.model.FastSpeech2
+
+coder_config:
+  dropout: 0.1
+  encoder_conv1d_filter_size: 1024
+  decoder_dim: 256
+  encoder_dim: 256
+  encoder_n_layer: 4
+  encoder_head: 2
+  fft_conv1d_kernel: [9, 1]
+  fft_conv1d_padding: [4, 0]
+  vocab_size: 300
+
+
+
+regulator_config:
+  predictor_filter_size: 256
+  predictor_kernel_size: 3
+  dropout: 0.1
+
+
+energy_config:
+  min_bucket: 15
+  max_bucket: 91
+  buckets: 256
+  alpha: 1.0
+
+pitch_config:
+  min_bucket: 60
+  max_bucket: 887
+  buckets: 256
+  alpha: 1.0
+
+device: 'cuda'
+max_seq_len: 3000
+num_mels: 80
+PAD: 0

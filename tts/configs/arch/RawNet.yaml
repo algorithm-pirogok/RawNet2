@@ -1,0 +1,16 @@
+_target_: tts.model.RawNet
+
+sinc_config:
+  out_channels: 20
+  kernel_size: 1024
+
+resblock_config:
+  channels: [20, 128]
+  num_of_layers: [2, 4]
+  num_of_nets: 2
+  first_norm: True
+
+gru_config:
+  hidden_size: 1024
+  num_layers: 3
+  norm: True

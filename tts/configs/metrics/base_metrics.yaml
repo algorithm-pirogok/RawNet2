@@ -1,0 +1,3 @@
+- _target_: tts.metrics.EER
+  name: EER Metric
+  train: true

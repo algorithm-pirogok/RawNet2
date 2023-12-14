@@ -1,0 +1,14 @@
+epochs: 200
+save_dir: saved/
+save_period: 1
+verbosity: 2
+monitor: min val_loss
+early_stop: 100
+visualize: wandb
+wandb_project: nv_homework
+wandb_name: delayed_model
+wandb_entity: wandb_pirogok
+len_epoch: 1000
+batch_acum: 1
+log_step: 50
+grad_norm_clip: 400

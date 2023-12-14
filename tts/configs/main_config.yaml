@@ -1,0 +1,17 @@
+defaults:
+  - arch: RawNet
+  # - augmentations: base_augmentations
+  - data: tts_dataset
+  - loss: tts_loss
+  - generator_scheduler: LRStep
+  - discriminator_scheduler: LRStep
+  - collate: main_collate
+  - metrics: base_metrics
+  - preprocessing: base_preprocessing
+  - trainer: base_trainer
+  - generator_optimizer: AdamW
+  - discriminator_optimizer: AdamW
+
+name: base_config
+n_gpu: 1
+checkpoint:
