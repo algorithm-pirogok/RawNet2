@@ -195,8 +195,9 @@ class Trainer(BaseTrainer):
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
             self.writer.add_histogram(name, p, bins="auto")
-        print(f"part: {part}: EER: {eer[0]}")
-        return self.train_metrics.result()
+        print(f"part: {part}: EER: {eer[0]} with thresh: {eer[1]}")
+        ans = self.train_metrics.result() | {"EER": eer[0], "thesh": eer[1]}
+        return ans
 
     def _progress(self, batch_idx):
         base = "[{}/{} ({:.0f}%)]"
