@@ -1,0 +1,28 @@
+train:
+  batch_size: 32
+  batch_expand_size: 1
+  num_workers: 8
+  datasets:
+    - _target_: tts.datasets.BufferDataset
+      path_to_dataset: 'data/LA'
+      type_of_dataset: 'train'
+      slice_length: 65536
+dev:
+  batch_size: 32
+  batch_expand_size: 1
+  num_workers: 8
+  datasets:
+    - _target_: tts.datasets.BufferDataset
+      path_to_dataset: 'data/LA'
+      type_of_dataset: 'dev'
+      slice_length: 65536
+
+eval:
+  batch_size: 32
+  batch_expand_size: 1
+  num_workers: 8
+  datasets:
+    - _target_: tts.datasets.BufferDataset
+      path_to_dataset: 'data/LA'
+      type_of_dataset: 'eval'
+      slice_length: 65536
