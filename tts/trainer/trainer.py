@@ -11,6 +11,7 @@ from tqdm import tqdm
 from tts.base import BaseTrainer
 from tts.datasets.MelSpectrogram import MelSpectrogram
 from tts.logger.utils import plot_spectrogram_to_buf
+from tts.metrics import EER
 from tts.utils import ROOT_PATH, MetricTracker, inf_loop
 from tts.utils.util import MelSpectrogramConfig
 
@@ -64,10 +65,11 @@ class Trainer(BaseTrainer):
             "loss",
         ] + [m.name for m in self._metrics_train]
         self.train_metrics = MetricTracker(
-            "grad norm",
+            "grad norm", "EER",
             *self.metrics,
             writer=self.writer,
         )
+        self.eer_metric = EER()
 
     @staticmethod
     def move_batch_to_device(batch, device: torch.device):
@@ -127,9 +129,12 @@ class Trainer(BaseTrainer):
                     return last_train_metrics
         log = last_train_metrics
 
-        #for part, dataloader in self.dev_dataloader.items():
-        #    dev_res = self._evaluation_epoch(epoch, part, dataloader)
-        #    log.update(**{f"{part}_{name}": value for name, value in dev_res.items()})
+        for part, dataloader in self.dev_dataloader.items():
+            dev_res = self._evaluation_epoch(epoch, part, dataloader)
+            log.update(**{f"{part}_{name}": value for name, value in dev_res.items()})
+        for part, dataloader in self.evaluation_dataloader.items():
+            dev_res = self._evaluation_epoch(epoch, part, dataloader)
+            log.update(**{f"{part}_{name}": value for name, value in dev_res.items()})
         return log
 
 
@@ -162,6 +167,8 @@ class Trainer(BaseTrainer):
         """
         self.model.eval()
         self.train_metrics.reset()
+        logits = []
+        targets = []
         with torch.no_grad():
             for batch_idx, batch in tqdm(
                     enumerate(dataloader),
@@ -174,25 +181,24 @@ class Trainer(BaseTrainer):
                     is_train=False,
                     metrics=self.train_metrics,
                 )
-
+                logits.extend(list(batch['pred_spoof'][:, 0].detach().cpu.numpy()))
+                targets.extend(list(batch['is_spoofed'].detach().astype(bool).cpu.numpy()))
+            logits = np.array(logits)
+            targets = np.array(targets)
+            eer = self.eer_metric(targets, logits)
+            self.writer.add_scalar("EER", eer[0])
             self.writer.set_step(epoch * self.len_epoch, part)
-            self._log_audio(batch['mixed'][0],
-                            batch['short'][0],
-                            batch['long'][0],
-                            batch['target'][0],
-                            batch['ref'][0],
-                            16000)
-            self._log_scalars(self.evaluation_metrics)
+            self._log_scalars(self.train_metrics)
             if "val" in part:
                 torch.save(self.model.state_dict(), ROOT_PATH / f"outputs/{epoch}.pth")
-
+                print("Save after val")
             # self._log_predictions(is_validation=True, **batch)
             # self._log_spectrogram(batch["spectrogram"])
-
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
             self.writer.add_histogram(name, p, bins="auto")
-        return self.evaluation_metrics.result()
+        print(f"part: {part}: EER: {eer[0]}")
+        return self.train_metrics.result()
 
 
     def _progress(self, batch_idx):
