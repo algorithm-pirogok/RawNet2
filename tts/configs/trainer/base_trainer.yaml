@@ -5,10 +5,10 @@ verbosity: 2
 monitor: min val_loss
 early_stop: 100
 visualize: wandb
-wandb_project: nv_homework
-wandb_name: delayed_model
+wandb_project: as_homework
+wandb_name: base_model
 wandb_entity: wandb_pirogok
-len_epoch: 10000
+len_epoch: 5000
 batch_acum: 1
 log_step: 50
 grad_norm_clip: 400

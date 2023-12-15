@@ -36,6 +36,7 @@ def main(clf: DictConfig):
     # setup data_loader instances
     # build model architecture, then print to console
     logger.info(model)
+    print(model)
     # prepare for (multi-device) GPU training
     device, device_ids = prepare_device(clf["n_gpu"])
     model = model.to(device)
@@ -51,8 +52,8 @@ def main(clf: DictConfig):
     # build optimizer, learning rate scheduler. delete every line containing lr_scheduler for
     # disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = instantiate(clf["generator_optimizer"], trainable_params)
-    scheduler = instantiate(clf["generator_scheduler"], optimizer)
+    optimizer = instantiate(clf["optimizer"], trainable_params)
+    scheduler = instantiate(clf["scheduler"], optimizer)
     trainer = Trainer(
         model,
         loss_module,

@@ -1,4 +1,0 @@
-_target_: torch.optim.AdamW
-lr: 0.01
-betas: [0.8, 0.99]
-eps: 1e-9
