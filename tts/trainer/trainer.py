@@ -22,19 +22,19 @@ class Trainer(BaseTrainer):
     """
 
     def __init__(
-        self,
-        model,
-        criterion,
-        metrics_train,
-        metrics_test,
-        optimizer,
-        config,
-        device,
-        log_step,
-        dataloader,
-        scheduler=None,
-        len_epoch=None,
-        skip_oom=True,
+            self,
+            model,
+            criterion,
+            metrics_train,
+            metrics_test,
+            optimizer,
+            config,
+            device,
+            log_step,
+            dataloader,
+            scheduler=None,
+            len_epoch=None,
+            skip_oom=True,
     ):
         super().__init__(
             model,
@@ -48,8 +48,7 @@ class Trainer(BaseTrainer):
         self.skip_oom = skip_oom
         self.config = config
         self.train_dataloader = dataloader['train']
-        self.dev_dataloader = dataloader['dev']
-        self.eval_dataloader = dataloader['eval']
+        self.eval_dataloaders = {key: value for key, value in dataloader.items()}
         if len_epoch is None:
             # epoch-based training
             self.len_epoch = len(self.train_dataloader)
@@ -57,15 +56,18 @@ class Trainer(BaseTrainer):
             # iteration-based training
             self.train_dataloader = inf_loop(self.train_dataloader)
             self.len_epoch = len_epoch
-        self.evaluation_dataloader = dataloader
         self.scheduler = scheduler
         self.log_step = log_step
         self.wav_to_mel = MelSpectrogram(MelSpectrogramConfig()).to(device)
         self.metrics = [
-            "loss",
-        ] + [m.name for m in self._metrics_train]
+                           "loss",
+                       ] + [m.name for m in self._metrics_train]
         self.train_metrics = MetricTracker(
             "grad norm", "EER",
+            *self.metrics,
+            writer=self.writer,
+        )
+        self.eval_metrics = MetricTracker(
             *self.metrics,
             writer=self.writer,
         )
@@ -97,7 +99,7 @@ class Trainer(BaseTrainer):
         self.train_metrics.reset()
         self.writer.add_scalar("epoch", epoch)
         for batch_idx, batch in enumerate(
-            tqdm(self.train_dataloader, desc="train", total=self.len_epoch)
+                tqdm(self.train_dataloader, desc="train", total=self.len_epoch)
         ):
             try:
                 batch = self.process_batch(
@@ -127,20 +129,16 @@ class Trainer(BaseTrainer):
                 last_train_metrics = self.train_metrics.result()
                 self.train_metrics.reset()
                 if batch_idx >= self.len_epoch:
-                    return last_train_metrics
+                    break
         log = last_train_metrics
 
-        for part, dataloader in self.dev_dataloader.items():
-            dev_res = self._evaluation_epoch(epoch, part, dataloader)
-            log.update(**{f"{part}_{name}": value for name, value in dev_res.items()})
-        for part, dataloader in self.evaluation_dataloader.items():
-            dev_res = self._evaluation_epoch(epoch, part, dataloader)
-            log.update(**{f"{part}_{name}": value for name, value in dev_res.items()})
+        for part, dataloader in self.eval_dataloaders.items():
+            eval_res = self._evaluation_epoch(epoch, part, dataloader)
+            log.update(**{f"{part}_{name}": value for name, value in eval_res.items()})
         return log
 
-
     def process_batch(
-        self, batch, is_train: bool, metrics: MetricTracker
+            self, batch, is_train: bool, metrics: MetricTracker
     ):
         batch = self.move_batch_to_device(batch, self.device)
 
@@ -178,12 +176,11 @@ class Trainer(BaseTrainer):
             ):
                 batch = self.process_batch(
                     batch,
-                    batch_idx=batch_idx,
                     is_train=False,
                     metrics=self.train_metrics,
                 )
-                logits.extend(list(batch['pred_spoof'][:, 0].detach().cpu.numpy()))
-                targets.extend(list(batch['is_spoofed'].detach().astype(bool).cpu.numpy()))
+                logits.extend(list(batch['pred_spoof'][:, 0].detach().cpu().numpy()))
+                targets.extend(list(batch['is_spoofed'].detach().cpu().numpy().astype(bool)))
             logits = np.array(logits)
             targets = np.array(targets)
             eer = self.eer_metric(targets, logits)
@@ -200,7 +197,6 @@ class Trainer(BaseTrainer):
             self.writer.add_histogram(name, p, bins="auto")
         print(f"part: {part}: EER: {eer[0]}")
         return self.train_metrics.result()
-
 
     def _progress(self, batch_idx):
         base = "[{}/{} ({:.0f}%)]"
