@@ -77,6 +77,7 @@ class Trainer(BaseTrainer):
         Move all necessary tensors to the HPU
         """
         batch["audio"] = batch["audio"].to(device)
+        batch["is_spoofed"] = batch["is_spoofed"].to(device)
         return batch
 
     def _clip_grad_norm(self, params=None):
