@@ -35,5 +35,5 @@ class EER(BaseMetric):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def __call__(self, target_scores, nontarget_scores):
-        return compute_eer(target_scores, nontarget_scores)
+    def __call__(self, target, logits):
+        return compute_eer(logits[target], logits[~target])
