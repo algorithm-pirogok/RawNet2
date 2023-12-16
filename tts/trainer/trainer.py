@@ -98,15 +98,14 @@ class Trainer(BaseTrainer):
         self.model.train()
         self.train_metrics.reset()
         self.writer.add_scalar("epoch", epoch)
-        for batch_idx, batch in enumerate(
-                tqdm(self.train_dataloader, desc="train", total=self.len_epoch)
-        ):
+        for batch_idx, batch in enumerate(tqdm(self.train_dataloader, desc="train", total=self.len_epoch)):
             try:
                 batch = self.process_batch(
                     batch,
                     is_train=True,
                     metrics=self.train_metrics,
                 )
+                self.train_metrics.update("grad norm", self.get_grad_norm())
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
                     self.logger.warning("OOM on batch. Skipping batch.")
@@ -150,10 +149,8 @@ class Trainer(BaseTrainer):
             batch["loss"].backward()
             self._clip_grad_norm(self.model.parameters())
             self.optimizer.step()
-            metrics.update(
-                "grad norm",
-                self.get_grad_norm(self.model.parameters()),
-            )
+            self.scheduler.step()
+
         metrics.update("loss", batch["loss"].item())
         return batch
 
@@ -184,14 +181,13 @@ class Trainer(BaseTrainer):
             logits = np.array(logits)
             targets = np.array(targets)
             eer, thresh = self.eer_metric(targets, logits)
+
             self.writer.add_scalar("EER", eer)
             self.writer.set_step(epoch * self.len_epoch, part)
             self._log_scalars(self.eval_metrics)
-            if "val" in part:
+            if "dev" in part:
                 torch.save(self.model.state_dict(), ROOT_PATH / f"outputs/{epoch}.pth")
                 print("Save after val")
-            # self._log_predictions(is_validation=True, **batch)
-            # self._log_spectrogram(batch["spectrogram"])
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
             self.writer.add_histogram(name, p, bins="auto")
