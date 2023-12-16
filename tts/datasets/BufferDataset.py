@@ -36,7 +36,7 @@ class BufferDataset(Dataset):
                     "speaker_id": speaker_id,
                     "path_to_file": str(path_to_file),
                     "algorithm": algorithm,
-                    "is_spoofed": type_of_spoofed == 'spoof'
+                    "is_real": type_of_spoofed != 'spoof'
                 })
         shuffle(output_lst)
         with open(path_to_json, 'w') as file:
@@ -60,5 +60,5 @@ class BufferDataset(Dataset):
             "speaker_id": elem["speaker_id"],
             "audio": audio,
             "algorithm": elem["algorithm"],
-            "is_spoofed": elem["is_spoofed"]
+            "is_real": elem["is_real"]
             }

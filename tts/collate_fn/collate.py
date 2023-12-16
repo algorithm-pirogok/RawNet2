@@ -23,5 +23,5 @@ def collate_fn(dataset_items: List[dict]):
             "audio_length": audio_length,
             "speaker_id": [el["speaker_id"] for el in dataset_items],
             "algorithm": [el["algorithm"] for el in dataset_items],
-            "is_spoofed": torch.tensor([el["is_spoofed"] for el in dataset_items]).long(),
+            "is_real": torch.tensor([el["is_real"] for el in dataset_items]).long(),
         }

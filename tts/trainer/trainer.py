@@ -79,7 +79,7 @@ class Trainer(BaseTrainer):
         Move all necessary tensors to the HPU
         """
         batch["audio"] = batch["audio"].to(device)
-        batch["is_spoofed"] = batch["is_spoofed"].to(device)
+        batch["is_real"] = batch["is_real"].to(device)
         return batch
 
     def _clip_grad_norm(self, params=None):
@@ -143,7 +143,7 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch, self.device)
 
         batch["pred_spoof"] = self.model(batch["audio"])
-        batch["loss"] = self.criterion(batch["pred_spoof"], batch["is_spoofed"])
+        batch["loss"] = self.criterion(batch["pred_spoof"], batch["is_real"])
 
         if is_train:
             self.optimizer.zero_grad()
@@ -179,12 +179,12 @@ class Trainer(BaseTrainer):
                     is_train=False,
                     metrics=self.train_metrics,
                 )
-                logits.extend(list(batch['pred_spoof'][:, 0].detach().cpu().numpy()))
-                targets.extend(list(batch['is_spoofed'].detach().cpu().numpy().astype(bool)))
+                logits += list(batch['pred_spoof'][:, 1].detach().cpu().numpy())
+                targets += list(batch['is_real'].detach().cpu().numpy().astype(bool))
             logits = np.array(logits)
             targets = np.array(targets)
-            eer = self.eer_metric(targets, logits)
-            self.writer.add_scalar("EER", eer[0])
+            eer, thresh = self.eer_metric(targets, logits)
+            self.writer.add_scalar("EER", eer)
             self.writer.set_step(epoch * self.len_epoch, part)
             self._log_scalars(self.train_metrics)
             if "val" in part:
@@ -195,8 +195,8 @@ class Trainer(BaseTrainer):
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
             self.writer.add_histogram(name, p, bins="auto")
-        print(f"part: {part}: EER: {eer[0]} with thresh: {eer[1]}")
-        ans = self.train_metrics.result() | {"EER": eer[0], "thesh": eer[1]}
+        print(f"part: {part}: EER: {eer} with thresh: {thresh}")
+        ans = self.train_metrics.result() | {"EER": eer, "thesh": eer}
         return ans
 
     def _progress(self, batch_idx):

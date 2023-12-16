@@ -1,2 +1,2 @@
 _target_: tts.loss.Loss
-weights: [0.9, 0.1]
+weights: [0.1, 0.9]
