@@ -32,7 +32,7 @@ class RawNet(nn.Module):
         )
 
     def forward(self, audio):
-        ans = torch.abs(self.sinc_conv(audio.unsqueeze(1)))
+        ans = self.sinc_conv(audio.unsqueeze(1))
         ans = self.max_pooling(ans)
         ans = self.batch_norms(ans)
         ans = self.res_block(ans)
