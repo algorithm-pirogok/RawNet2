@@ -36,7 +36,7 @@ class SincConv_fast(nn.Module):
         return 700 * (10 ** (mel / 2595) - 1)
 
     def __init__(self, out_channels, kernel_size, sample_rate=16000, in_channels=1,
-                 stride=1, padding=0, dilation=1, bias=False, groups=1, min_low_hz=0, min_band_hz=0):
+                 stride=1, padding=0, dilation=1, bias=False, groups=1, min_low_hz=50, min_band_hz=50):
 
         super(SincConv_fast, self).__init__()
 
@@ -67,7 +67,7 @@ class SincConv_fast(nn.Module):
         self.min_band_hz = min_band_hz
 
         # initialize filterbanks such that they are equally spaced in Mel scale
-        low_hz = 30
+        low_hz = 0
         high_hz = self.sample_rate / 2 - (self.min_low_hz + self.min_band_hz)
 
         # In the future we will set high hz as band_hz + low + min_band_hz + min_low_hz
@@ -80,11 +80,11 @@ class SincConv_fast(nn.Module):
         hz = self.to_hz(mel)
 
         # filter lower frequency (out_channels, 1)
-        self.low_hz_ = nn.Parameter(torch.Tensor(hz[:-1]).view(-1, 1), requires_grad=False)
+        self.low_hz_ = nn.Parameter(torch.Tensor(hz[:-1]).view(-1, 1))  # learnable f1 from the paper
 
         # filter frequency band (out_channels, 1)
         self.band_hz_ = nn.Parameter(
-            torch.Tensor(np.diff(hz)).view(-1, 1), requires_grad=False)
+            torch.Tensor(np.diff(hz)).view(-1, 1))  # learnable f2 (f2 = f1+diff) from the paper
 
         # len(g) = kernel_size
         # It is symmetric, therefore we will do computations only with left part, while creating g.
