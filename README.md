@@ -1,4 +1,4 @@
-# SS project barebones
+# Anti-spoofing
 
 ## Установка
 
@@ -6,12 +6,14 @@
 скачать модель
 ```shell
 pip install -r ./requirements.txt
+axel -n 8 https://disk.yandex.ru/d/mDBnOnSdipU61A
 ```
+
 
 
 ## Модель
 
-Реализация основана на статье SpeX+ с использованием hydra в качестве конфига.
+Реализация основана на статье RawNet2 с использованием hydra в качестве конфига.
 
 
 
@@ -20,33 +22,34 @@ pip install -r ./requirements.txt
 Чтобы запустить тренировку модели на части LibriSpeech нужно изменить config, а именно часть, отвечающую за датасеты.
 Выглядит она так
 ```yaml
-train:
-  batch_size: 4
-  num_workers: 8
-  datasets:
-    - _target_: tts.datasets.MixedLibrispeechDataset
-      part: train-clean-100
-      sr: 16000
+defaults:
+  - arch: RawNet
+  - data: tts_dataset
+  - loss: tts_loss
+  - scheduler: LRStep
+  - collate: main_collate
+  - metrics: base_metrics
+  - preprocessing: base_preprocessing
+  - trainer: base_trainer
+  - optimizer: Adam
+
+name: base_config
+n_gpu: 1
+checkpoint:
 ```
-Все, что нужно подправить, это указать какую часть датасета мы хотим слушать и размер батча.
+Каждый отдельный файл отвечает за свой небольшой блок, из-за чего его удобно править.
 
 Также можно протестировать модель на произвольном датасете, для этого нужно поменять конфиг данных для тренировки6 устроен он следующим образом:
 ```yaml
-test:
-  batch_size: 1
-  num_workers: 8
-  datasets:
-    - _target_: tts.datasets.MixedTestDataset
-      sr: 16000
-      absolute_path: True
-      path_to_mix_dir: data/datasets/test_dataset/mix/mix
-      path_to_ref_dir: data/datasets/test_dataset/ref/refs
-      path_to_target_dir: data/datasets/test_dataset/target/targets
+defaults:
+  - arch: RawNet
+  # - augmentations: base_augmentations
 
+name: test_config
+n_gpu: 1
+checkpoint: ~/rawnet.pth
 ```
-Соответсвенно поменять нужно пути, если данные лежат по абсолютному пути, то `absolute_path` нужно ставить False
-
-Также для продолжения нужно указать checkpoint от того, что мы хотим делать
+Соответсвенно, нужно поменять расположение модели и при этом засунуть все нужные данные для проверки в data/test
 
 ## Credits
 
