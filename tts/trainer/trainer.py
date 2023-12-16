@@ -105,7 +105,10 @@ class Trainer(BaseTrainer):
                     is_train=True,
                     metrics=self.train_metrics,
                 )
-                self.train_metrics.update("grad norm", self.get_grad_norm())
+                self.train_metrics.update(
+                    "grad norm",
+                    self.get_grad_norm(self.model.parameters()),
+                )
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
                     self.logger.warning("OOM on batch. Skipping batch.")
