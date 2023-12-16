@@ -165,7 +165,7 @@ class Trainer(BaseTrainer):
         :return: A log that contains information about validation
         """
         self.model.eval()
-        self.train_metrics.reset()
+        self.eval_metrics.reset()
         logits = []
         targets = []
         with torch.no_grad():
@@ -177,7 +177,7 @@ class Trainer(BaseTrainer):
                 batch = self.process_batch(
                     batch,
                     is_train=False,
-                    metrics=self.train_metrics,
+                    metrics=self.eval_metrics,
                 )
                 logits += list(batch['pred_spoof'][:, 1].detach().cpu().numpy())
                 targets += list(batch['is_real'].detach().cpu().numpy().astype(bool))
@@ -186,7 +186,7 @@ class Trainer(BaseTrainer):
             eer, thresh = self.eer_metric(targets, logits)
             self.writer.add_scalar("EER", eer)
             self.writer.set_step(epoch * self.len_epoch, part)
-            self._log_scalars(self.train_metrics)
+            self._log_scalars(self.eval_metrics)
             if "val" in part:
                 torch.save(self.model.state_dict(), ROOT_PATH / f"outputs/{epoch}.pth")
                 print("Save after val")
@@ -196,7 +196,7 @@ class Trainer(BaseTrainer):
         for name, p in self.model.named_parameters():
             self.writer.add_histogram(name, p, bins="auto")
         print(f"part: {part}: EER: {eer} with thresh: {thresh}")
-        ans = self.train_metrics.result() | {"EER": eer, "thesh": eer}
+        ans = self.eval_metrics.result() | {"EER": eer, "thesh": eer}
         return ans
 
     def _progress(self, batch_idx):
